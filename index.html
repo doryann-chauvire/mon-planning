@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Mon Planning</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--bg:#0f0f0f;--surface:#1a1a1a;--surface2:#222;--surface3:#2a2a2a;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.14);--text:#f0f0f0;--muted:#777;--muted2:#444;--accent:#e8ff6b;}
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-webkit-tap-highlight-color:transparent;}
+.header{padding:1rem 1.25rem .75rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.header-left{min-width:0;flex:1;}
+.header-title{font-size:18px;font-weight:500;letter-spacing:-.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.header-profile{font-size:11px;color:var(--accent);font-family:'DM Mono',monospace;margin-top:2px;}
+.header-actions{display:flex;gap:5px;flex-shrink:0;}
+.hbtn{font-size:12px;font-family:'DM Mono',monospace;color:var(--muted);background:transparent;border:1px solid var(--border2);border-radius:20px;padding:5px 10px;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.hbtn.active{color:var(--accent);border-color:var(--accent);}
+.profile-bar{display:flex;gap:6px;padding:.6rem 1.25rem;overflow-x:auto;border-bottom:1px solid var(--border);scrollbar-width:none;align-items:center;}
+.profile-bar::-webkit-scrollbar{display:none;}
+.profile-chip{flex-shrink:0;padding:5px 13px;border-radius:20px;font-size:13px;font-weight:500;border:1px solid var(--border2);color:var(--muted);cursor:pointer;background:transparent;transition:all .15s;}
+.profile-chip.active{background:var(--accent);color:#0f0f0f;border-color:var(--accent);}
+.profile-gear{flex-shrink:0;width:28px;height:28px;border-radius:50%;border:1px dashed var(--border2);color:var(--muted);background:transparent;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;}
+.view-tabs{display:flex;border-bottom:1px solid var(--border);}
+.vtab{flex:1;padding:9px 4px;font-size:12px;font-weight:500;border:none;color:var(--muted);cursor:pointer;background:transparent;border-bottom:2px solid transparent;font-family:'DM Sans',sans-serif;}
+.vtab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.day-tabs{display:flex;gap:6px;padding:.65rem 1.25rem;overflow-x:auto;border-bottom:1px solid var(--border);scrollbar-width:none;}
+.day-tabs::-webkit-scrollbar{display:none;}
+.day-tab{flex-shrink:0;padding:5px 13px;border-radius:20px;font-size:13px;font-weight:500;border:1px solid var(--border2);color:var(--muted);cursor:pointer;background:transparent;transition:all .15s;position:relative;}
+.day-tab.active{background:var(--accent);color:#0f0f0f;border-color:var(--accent);}
+.day-tab.today-dot::after{content:'';position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--accent);}
+.progress-wrap{padding:.75rem 1.25rem .5rem;}
+.progress-meta{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px;}
+.progress-label{font-size:12px;color:var(--muted);font-family:'DM Mono',monospace;}
+.progress-pct{font-size:19px;font-weight:300;color:var(--accent);letter-spacing:-1px;}
+.progress-track{height:3px;background:var(--surface2);border-radius:2px;}
+.progress-fill{height:3px;background:var(--accent);border-radius:2px;transition:width .4s cubic-bezier(.4,0,.2,1);}
+/* LIST */
+#view-list{display:block;}
+.slots{padding:.4rem 1.25rem 6rem;display:flex;flex-direction:column;gap:7px;}
+.slot-card{border-radius:12px;border:1px solid var(--border2);background:var(--surface);overflow:hidden;}
+.slot-header{display:flex;align-items:center;gap:10px;padding:11px 13px;cursor:pointer;user-select:none;}
+.slot-color-bar{width:3px;height:30px;border-radius:2px;flex-shrink:0;}
+.slot-header-info{flex:1;min-width:0;}
+.slot-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.slot-time{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:2px;}
+.slot-prog{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;flex-shrink:0;}
+.slot-chevron{color:var(--muted2);font-size:18px;flex-shrink:0;transition:transform .2s;line-height:1;}
+.slot-card.open .slot-chevron{transform:rotate(90deg);}
+.slot-actions{display:none;gap:4px;}
+.edit-mode-on .slot-actions{display:flex;}
+.sbtn{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:none;border-radius:6px;cursor:pointer;font-size:13px;flex-shrink:0;}
+.sbtn-edit{background:rgba(232,255,107,.1);color:var(--accent);}
+.sbtn-del{background:rgba(255,107,107,.12);color:#ff6b6b;}
+.subtasks{border-top:1px solid var(--border);display:none;}
+.slot-card.open .subtasks{display:block;}
+.sub-row{display:flex;align-items:center;gap:10px;padding:9px 13px 9px 20px;border-bottom:1px solid var(--border);cursor:pointer;}
+.sub-row:last-child{border-bottom:none;}
+.sub-row:active{background:var(--surface2);}
+.sub-row.done .sub-name{text-decoration:line-through;color:var(--muted2);}
+.sub-check{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;}
+.sub-row.done .sub-check{background:var(--accent);border-color:var(--accent);}
+.sub-cm{display:none;}
+.sub-row.done .sub-cm{display:block;}
+.sub-name{flex:1;font-size:13px;}
+.sub-del{display:none;width:24px;height:24px;align-items:center;justify-content:center;border:none;border-radius:5px;background:rgba(255,107,107,.12);color:#ff6b6b;cursor:pointer;font-size:12px;flex-shrink:0;}
+.edit-mode-on .sub-del{display:flex;}
+.add-sub-row{display:flex;align-items:center;gap:8px;padding:7px 13px 7px 20px;background:var(--surface2);}
+.add-sub-input{flex:1;background:transparent;border:none;outline:none;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;}
+.add-sub-input::placeholder{color:var(--muted2);}
+.add-sub-btn{width:24px;height:24px;display:flex;align-items:center;justify-content:center;background:var(--accent);border:none;border-radius:5px;color:#0f0f0f;cursor:pointer;font-size:17px;}
+.bar-cours{background:#6bb5ff;}.bar-perso{background:#b86bff;}.bar-sport{background:#6bffb8;}.bar-repas{background:#ffb86b;}.bar-revisions{background:#ff6b6b;}.bar-libre{background:#555;}
+/* DAY VIEW */
+#view-day{display:none;overflow-y:auto;padding-bottom:6rem;}
+.day-tt{padding:0 1.25rem;position:relative;}
+.day-tt-row{display:flex;gap:10px;min-height:36px;}
+.day-tt-time{width:40px;flex-shrink:0;font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;padding-top:4px;}
+.day-tt-line{flex:1;border-top:1px solid var(--border);}
+.day-block{margin:2px 0;border-radius:8px;padding:7px 10px;}
+.day-block.tag-cours{background:rgba(107,181,255,.15);border-left:3px solid #6bb5ff;}
+.day-block.tag-perso{background:rgba(184,107,255,.15);border-left:3px solid #b86bff;}
+.day-block.tag-sport{background:rgba(107,255,184,.15);border-left:3px solid #6bffb8;}
+.day-block.tag-repas{background:rgba(255,184,107,.15);border-left:3px solid #ffb86b;}
+.day-block.tag-revisions{background:rgba(255,107,107,.15);border-left:3px solid #ff6b6b;}
+.day-block.tag-libre{background:rgba(255,255,255,.04);border-left:3px solid #444;}
+.dbn{font-size:13px;font-weight:500;}
+.dbm{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:2px;}
+.day-now{position:absolute;left:50px;right:0;height:1px;background:var(--accent);z-index:5;pointer-events:none;}
+.day-now::before{content:'';position:absolute;left:-1px;top:-3px;width:6px;height:6px;border-radius:50%;background:var(--accent);}
+/* WEEK VIEW */
+#view-week{display:none;overflow:auto;padding-bottom:6rem;}
+.week-tt{min-width:480px;}
+.week-hr{display:flex;position:sticky;top:0;background:var(--bg);z-index:10;border-bottom:1px solid var(--border);}
+.week-tc{width:38px;flex-shrink:0;}
+.week-dh{flex:1;text-align:center;font-size:10px;font-weight:500;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.06em;padding:7px 2px;border-left:1px solid var(--border);}
+.week-dh.today{color:var(--accent);}
+.week-body{position:relative;}
+.week-row{display:flex;border-bottom:1px solid var(--border);}
+.week-tl{width:38px;flex-shrink:0;font-size:9px;color:var(--muted);font-family:'DM Mono',monospace;padding:3px 3px 0;line-height:1;}
+.week-cell{flex:1;border-left:1px solid var(--border);min-height:32px;}
+.week-blk{position:absolute;left:1px;right:1px;border-radius:4px;padding:2px 4px;font-size:9px;font-weight:500;overflow:hidden;line-height:1.3;cursor:default;}
+.week-blk.tag-cours{background:rgba(107,181,255,.18);color:#6bb5ff;border-left:2px solid #6bb5ff;}
+.week-blk.tag-perso{background:rgba(184,107,255,.18);color:#b86bff;border-left:2px solid #b86bff;}
+.week-blk.tag-sport{background:rgba(107,255,184,.18);color:#6bffb8;border-left:2px solid #6bffb8;}
+.week-blk.tag-repas{background:rgba(255,184,107,.18);color:#ffb86b;border-left:2px solid #ffb86b;}
+.week-blk.tag-revisions{background:rgba(255,107,107,.18);color:#ff6b6b;border-left:2px solid #ff6b6b;}
+.week-blk.tag-libre{background:rgba(255,255,255,.04);color:#666;border-left:2px solid #333;}
+.week-now{position:absolute;left:38px;right:0;height:1px;background:var(--accent);z-index:5;pointer-events:none;}
+.week-now::before{content:'';position:absolute;left:-1px;top:-3px;width:6px;height:6px;border-radius:50%;background:var(--accent);}
+/* MONTH VIEW */
+#view-month{display:none;padding-bottom:6rem;}
+.month-nav{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1.25rem;}
+.month-nav-title{font-size:15px;font-weight:500;font-family:'DM Mono',monospace;text-transform:capitalize;}
+.month-nb{background:transparent;border:1px solid var(--border2);border-radius:8px;color:var(--muted);font-size:16px;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.month-wds{display:grid;grid-template-columns:repeat(7,1fr);padding:0 1.25rem;border-bottom:1px solid var(--border);}
+.month-wd{text-align:center;font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;padding:6px 0;}
+.month-grid{display:grid;grid-template-columns:repeat(7,1fr);padding:0 1.25rem;gap:1px;background:var(--border);}
+.month-day{background:var(--bg);min-height:66px;padding:4px;cursor:pointer;}
+.month-day:active{background:var(--surface);}
+.month-day.other-month .md-num{color:var(--muted2);}
+.month-day.today .md-num{color:#0f0f0f;background:var(--accent);border-radius:50%;}
+.month-day.selected{background:var(--surface2);}
+.md-num{font-size:12px;font-weight:500;color:var(--muted);margin-bottom:3px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;}
+.md-dots{display:flex;flex-wrap:wrap;gap:2px;}
+.md-dot{width:5px;height:5px;border-radius:50%;}
+.md-dot.tag-cours{background:#6bb5ff;}.md-dot.tag-perso{background:#b86bff;}.md-dot.tag-sport{background:#6bffb8;}.md-dot.tag-repas{background:#ffb86b;}.md-dot.tag-revisions{background:#ff6b6b;}.md-dot.tag-libre{background:#555;}
+.month-detail{padding:.75rem 1.25rem;border-top:1px solid var(--border);}
+.month-detail-title{font-size:12px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:8px;text-transform:capitalize;}
+.mds{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);}
+.mds:last-child{border-bottom:none;}
+.mds-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.mds-name{font-size:13px;font-weight:500;flex:1;}
+.mds-time{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;}
+/* FAB */
+.fab{position:fixed;bottom:1.5rem;right:1.25rem;display:flex;align-items:center;gap:8px;padding:12px 20px;background:var(--accent);color:#0f0f0f;border-radius:50px;border:none;font-size:14px;font-weight:500;font-family:'DM Sans',sans-serif;cursor:pointer;box-shadow:0 4px 24px rgba(232,255,107,.25);transition:transform .15s;}
+.fab:active{transform:scale(.96);}
+.fab.hidden{display:none;}
+/* PANELS */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99;display:none;}
+.overlay.open{display:block;}
+.panel{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border2);border-radius:16px 16px 0 0;padding:1.25rem 1.25rem 2.5rem;display:none;flex-direction:column;gap:11px;z-index:100;max-height:92vh;overflow-y:auto;}
+.panel.open{display:flex;}
+.panel-title{font-size:15px;font-weight:500;}
+.panel-sub{font-size:12px;color:var(--muted);margin-top:-5px;}
+input,select{background:var(--surface2);color:var(--text);border:1px solid var(--border2);border-radius:8px;padding:10px 12px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;width:100%;transition:border-color .15s;-webkit-appearance:none;}
+input:focus,select:focus{border-color:var(--accent);}
+input::placeholder{color:var(--muted);}
+select option{background:var(--surface2);}
+.field-row{display:flex;gap:8px;}
+.btn-ok{padding:11px 20px;background:var(--accent);color:#0f0f0f;border:none;border-radius:8px;font-size:14px;font-weight:500;font-family:'DM Sans',sans-serif;cursor:pointer;flex:1;}
+.btn-cancel{padding:11px 14px;background:transparent;color:var(--muted);border:1px solid var(--border2);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;cursor:pointer;}
+.btn-danger{padding:11px 14px;background:rgba(255,107,107,.15);color:#ff6b6b;border:1px solid rgba(255,107,107,.2);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;cursor:pointer;}
+/* TIME PICKER — touch-action:none is the key mobile fix */
+.tp-wrap{display:flex;gap:8px;align-items:center;}
+.tp-label{font-size:12px;color:var(--muted);font-family:'DM Mono',monospace;flex-shrink:0;width:34px;}
+.tp-box{display:flex;align-items:center;border:1px solid var(--border2);border-radius:8px;background:var(--surface2);flex:1;overflow:hidden;}
+.tp-inner{display:flex;align-items:center;justify-content:center;flex:1;gap:0;padding:3px 0;}
+.tp-col{display:flex;flex-direction:column;align-items:center;}
+.tp-btn{width:42px;height:32px;display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:14px;user-select:none;-webkit-user-select:none;touch-action:none;-webkit-tap-highlight-color:transparent;}
+.tp-btn:active{color:var(--accent);}
+.tp-val{font-size:18px;font-weight:500;font-family:'DM Mono',monospace;color:var(--text);min-width:28px;text-align:center;}
+.tp-sep{font-size:18px;font-weight:500;color:var(--muted2);padding:0 2px;}
+.tp-hint{font-size:11px;color:var(--muted2);text-align:center;font-family:'DM Mono',monospace;}
+/* PROFILES PANEL */
+.profile-list{display:flex;flex-direction:column;gap:6px;}
+.pf-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:1px solid var(--border2);background:var(--surface2);}
+.pf-item.active-pf{border-color:var(--accent);}
+.pf-name{flex:1;font-size:14px;font-weight:500;}
+.pf-badge{font-size:10px;font-family:'DM Mono',monospace;color:var(--accent);background:rgba(232,255,107,.12);border-radius:20px;padding:2px 8px;}
+.pf-del{width:26px;height:26px;display:flex;align-items:center;justify-content:center;border:none;border-radius:6px;background:rgba(255,107,107,.12);color:#ff6b6b;cursor:pointer;font-size:13px;}
+/* IE PANEL */
+.ie-btn-row{display:flex;gap:8px;}
+.ie-btn{flex:1;padding:12px;border-radius:8px;font-size:13px;font-weight:500;font-family:'DM Sans',sans-serif;border:1px solid var(--border2);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;background:transparent;}
+.ie-btn.export{color:var(--accent);border-color:rgba(232,255,107,.3);background:rgba(232,255,107,.05);}
+.ie-btn.import{color:#6bb5ff;border-color:rgba(107,181,255,.3);background:rgba(107,181,255,.05);}
+.ie-icon{font-size:22px;}
+.ie-sub{font-size:11px;color:var(--muted);}
+.ie-st{font-size:13px;text-align:center;padding:4px 0;min-height:20px;}
+.ie-st.ok{color:#6bffb8;}.ie-st.err{color:#ff6b6b;}
+/* ECOLEDIRECTE PANEL */
+.ed-info{font-size:12px;color:var(--muted);line-height:1.5;background:var(--surface2);border-radius:8px;padding:10px 12px;}
+.ed-info strong{color:var(--text);}
+.ed-status{font-size:13px;font-family:'DM Mono',monospace;padding:8px 12px;border-radius:8px;background:var(--surface2);color:var(--muted);text-align:center;}
+.ed-status.connected{color:#6bffb8;background:rgba(107,255,184,.08);}
+.ed-week-nav{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border2);border-radius:8px;padding:4px;}
+.ed-week-label{font-size:13px;font-family:'DM Mono',monospace;color:var(--text);}
+.ed-error{font-size:12px;color:#ff6b6b;text-align:center;min-height:16px;line-height:1.4;}
+.ed-sep{border:none;border-top:1px solid var(--border);margin:0;}
+.empty{text-align:center;color:var(--muted);font-size:14px;padding:3rem 0;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="header-title" id="header-date">Mon Planning</div>
+    <div class="header-profile" id="header-profile"></div>
+  </div>
+  <div class="header-actions">
+    <button class="hbtn" id="edit-btn" onclick="toggleEditMode()">modifier</button>
+    <button class="hbtn" onclick="openPanel('panel-ie')">↑↓</button>
+    <button class="hbtn" onclick="openEdPanel()">EDT</button>
+  </div>
+</div>
+
+<div class="profile-bar" id="profile-bar"></div>
+
+<div class="view-tabs">
+  <button class="vtab active" id="vtab-list"  onclick="switchView('list')">📋 Liste</button>
+  <button class="vtab"        id="vtab-day"   onclick="switchView('day')">📅 Jour</button>
+  <button class="vtab"        id="vtab-week"  onclick="switchView('week')">🗓 Semaine</button>
+  <button class="vtab"        id="vtab-month" onclick="switchView('month')">📆 Mois</button>
+</div>
+
+<div class="day-tabs" id="day-tabs"></div>
+<div class="progress-wrap" id="progress-wrap">
+  <div class="progress-meta">
+    <span class="progress-label" id="prog-label"></span>
+    <span class="progress-pct" id="prog-pct">0%</span>
+  </div>
+  <div class="progress-track"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+</div>
+
+<div id="view-list"><div class="slots" id="slots-list"></div></div>
+<div id="view-day"><div class="day-tt" id="day-tt"></div></div>
+<div id="view-week"><div class="week-tt" id="week-tt"></div></div>
+<div id="view-month">
+  <div class="month-nav">
+    <button class="month-nb" onclick="monthOffset(-1)">‹</button>
+    <div class="month-nav-title" id="month-title"></div>
+    <button class="month-nb" onclick="monthOffset(+1)">›</button>
+  </div>
+  <div class="month-wds"><div class="month-wd">Lu</div><div class="month-wd">Ma</div><div class="month-wd">Me</div><div class="month-wd">Je</div><div class="month-wd">Ve</div><div class="month-wd">Sa</div><div class="month-wd">Di</div></div>
+  <div class="month-grid" id="month-grid"></div>
+  <div class="month-detail" id="month-detail"></div>
+</div>
+
+<button class="fab" id="fab" onclick="openAddSlot()">
+  <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  Ajouter un bloc
+</button>
+
+<div class="overlay" id="overlay" onclick="closePanels()"></div>
+
+<!-- PANEL : nouveau bloc -->
+<div class="panel" id="panel-slot">
+  <div class="panel-title">Nouveau bloc horaire</div>
+  <div class="panel-sub" id="panel-slot-day"></div>
+  <input id="s-name" placeholder="Nom du bloc (ex : Réveil & petit-dej)"/>
+  <div class="tp-wrap">
+    <span class="tp-label">Début</span>
+    <div class="tp-box"><div class="tp-inner">
+      <div class="tp-col">
+        <button class="tp-btn" onpointerdown="tpSR('s',0,1)" onpointerup="tpST()" onpointerleave="tpST()">▲</button>
+        <div class="tp-val" id="s-h">06</div>
+        <button class="tp-btn" onpointerdown="tpSR('s',0,-1)" onpointerup="tpST()" onpointerleave="tpST()">▼</button>
+      </div>
+      <span class="tp-sep">:</span>
+      <div class="tp-col">
+        <button class="tp-btn" onpointerdown="tpSR('s',1,1)" onpointerup="tpST()" onpointerleave="tpST()">▲</button>
+        <div class="tp-val" id="s-m">00</div>
+        <button class="tp-btn" onpointerdown="tpSR('s',1,-1)" onpointerup="tpST()" onpointerleave="tpST()">▼</button>
+      </div>
+    </div></div>
+  </div>
+  <div class="tp-wrap">
+    <span class="tp-label">Fin</span>
+    <div class="tp-box"><div class="tp-inner">
+      <div class="tp-col">
+        <button class="tp-btn" onpointerdown="tpSR('e',0,1)" onpointerup="tpST()" onpointerleave="tpST()">▲</button>
+        <div class="tp-val" id="e-h">07</div>
+        <button class="tp-btn" onpointerdown="tpSR('e',0,-1)" onpointerup="tpST()" onpointerleave="tpST()">▼</button>
+      </div>
+      <span class="tp-sep">:</span>
+      <div class="tp-col">
+        <button class="tp-btn" onpointerdown="tpSR('e',1,1)" onpointerup="tpST()" onpointerleave="tpST()">▲</button>
+        <div class="tp-val" id="e-m">00</div>
+        <button class="tp-btn" onpointerdown="tpSR('e',1,-1)" onpointerup="tpST()" onpointerleave="tpST()">▼</button>
+      </div>
+    </div></div>
+  </div>
+  <div class="tp-hint">Appui long = défilement rapide</div>
+  <select id="s-tag"><option value="libre">temps libre</option><option value="cours">cours</option><option value="revisions">révisions</option><option value="perso">projet perso</option><option value="sport">sport</option><option value="repas">repas</option></select>
+  <div class="field-row">
+    <button class="btn-cancel" onclick="closePanels()">Annuler</button>
+    <button class="btn-ok" onclick="saveSlot()">Créer</button>
+  </div>
+</div>
+
+<!-- PANEL : modifier bloc -->
+<div class="panel" id="panel-edit-slot">
+  <div class="panel-title">Modifier le bloc</div>
+  <input id="es-name" placeholder="Nom du bloc"/>
+  <div class="tp-wrap">
+    <span class="tp-label">Début</span>
+    <div class="tp-box"><div class="tp-inner">
+      <div class="tp-col">
+        <button class="tp-btn" onpointerdown="tpSR('es',0,1)" onpointerup="tpST()" onpointerleave="tpST()">▲</button>
+        <div class="tp-val" id="es-h">08</div>
+        <button class="tp-btn" onpointerdown="tpSR('es',0,-1)" onpointerup="tpST()" onpointerleave="tpST()">▼</button>
+      </div>
+      <span class="tp-sep">:</span>
+      <div class="tp-col">
+        <button class="tp-btn" onpointerdown="tpSR('es',1,1)" onpointerup="tpST()" onpointerleave="tpST()">▲</button>
+        <div class="tp-val" id="es-m">00</div>
+        <button class="tp-btn" onpointerdown="tpSR('es',1,-1)" onpointerup="tpST()" onpointerleave="tpST()">▼</button>
+      </div>
+    </div></div>
+  </div>
+  <div class="tp-wrap">
+    <span class="tp-label">Fin</span>
+    <div class="tp-box"><div class="tp-inner">
+      <div class="tp-col">
+        <button class="tp-btn" onpointerdown="tpSR('ee',0,1)" onpointerup="tpST()" onpointerleave="tpST()">▲</button>
+        <div class="tp-val" id="ee-h">09</div>
+        <button class="tp-btn" onpointerdown="tpSR('ee',0,-1)" onpointerup="tpST()" onpointerleave="tpST()">▼</button>
+      </div>
+      <span class="tp-sep">:</span>
+      <div class="tp-col">
+        <button class="tp-btn" onpointerdown="tpSR('ee',1,1)" onpointerup="tpST()" onpointerleave="tpST()">▲</button>
+        <div class="tp-val" id="ee-m">00</div>
+        <button class="tp-btn" onpointerdown="tpSR('ee',1,-1)" onpointerup="tpST()" onpointerleave="tpST()">▼</button>
+      </div>
+    </div></div>
+  </div>
+  <div class="tp-hint">Appui long = défilement rapide</div>
+  <select id="es-tag"><option value="libre">temps libre</option><option value="cours">cours</option><option value="revisions">révisions</option><option value="perso">projet perso</option><option value="sport">sport</option><option value="repas">repas</option></select>
+  <div class="field-row">
+    <button class="btn-danger" onclick="deleteSlotEdit()">Supprimer</button>
+    <button class="btn-ok" onclick="saveEditSlot()">Enregistrer</button>
+  </div>
+  <button class="btn-cancel" style="width:100%;text-align:center;" onclick="closePanels()">Annuler</button>
+</div>
+
+<!-- PANEL : profils -->
+<div class="panel" id="panel-profiles">
+  <div class="panel-title">Mes profils de planning</div>
+  <div class="profile-list" id="profile-list"></div>
+  <hr class="ed-sep"/>
+  <div class="panel-sub">Créer un nouveau profil</div>
+  <input id="new-profile-name" placeholder="Nom (ex: Vacances, Semaine paire…)"/>
+  <div class="field-row" style="align-items:center;gap:8px;">
+    <span style="font-size:12px;color:var(--muted);white-space:nowrap;">Copier depuis :</span>
+    <select id="new-profile-copy" style="flex:1;"></select>
+  </div>
+  <div class="field-row">
+    <button class="btn-cancel" onclick="closePanels()">Annuler</button>
+    <button class="btn-ok" onclick="createProfile()">Créer</button>
+  </div>
+</div>
+
+<!-- PANEL : import/export -->
+<div class="panel" id="panel-ie">
+  <div class="panel-title">Import / Export</div>
+  <div class="panel-sub">Sauvegarde ou transfère tous tes profils en JSON.</div>
+  <div class="ie-btn-row">
+    <button class="ie-btn export" onclick="doExport()"><span class="ie-icon">⬇</span><span>Exporter</span><span class="ie-sub">télécharger .json</span></button>
+    <button class="ie-btn import" onclick="document.getElementById('import-file').click()"><span class="ie-icon">⬆</span><span>Importer</span><span class="ie-sub">charger un .json</span></button>
+  </div>
+  <input type="file" id="import-file" accept=".json" style="display:none" onchange="doImport(event)"/>
+  <div class="ie-st" id="ie-status"></div>
+  <button class="btn-cancel" style="width:100%;text-align:center;" onclick="closePanels()">Fermer</button>
+</div>
+
+<!-- PANEL : EcoleDirecte -->
+<div class="panel" id="panel-ed">
+  <div class="panel-title">📚 EcoleDirecte</div>
+  <div class="ed-info">Importe automatiquement ton emploi du temps dans ton planning.<br><strong>Le mot de passe n'est jamais stocké.</strong> Connexion valide jusqu'à fermeture du navigateur.</div>
+  <div class="ed-status" id="ed-status">Non connecté</div>
+
+  <div id="ed-login-section">
+    <input id="ed-user" placeholder="Identifiant EcoleDirecte" autocomplete="username" style="margin-bottom:8px;"/>
+    <input id="ed-pass" type="password" placeholder="Mot de passe" autocomplete="current-password"/>
+    <button class="btn-ok" id="ed-login-btn" onclick="doEdLogin()">Se connecter</button>
+  </div>
+
+  <div id="ed-connected-section" style="display:none;flex-direction:column;gap:10px;">
+    <div class="ed-week-nav">
+      <button class="month-nb" onclick="edWeekNav(-1)">‹</button>
+      <span class="ed-week-label" id="ed-week-label">—</span>
+      <button class="month-nb" onclick="edWeekNav(+1)">›</button>
+    </div>
+    <div class="panel-sub">Choisir la semaine à importer, puis :</div>
+    <div class="field-row">
+      <button class="btn-cancel" id="ed-btn-update" onclick="doEdImport(false)" style="flex:1;text-align:center;">Mettre à jour le profil actif</button>
+      <button class="btn-ok" id="ed-btn-new" onclick="doEdImport(true)">Nouveau profil</button>
+    </div>
+    <button class="btn-danger" style="width:100%;text-align:center;" onclick="edDisconnect()">Se déconnecter</button>
+  </div>
+
+  <div class="ed-error" id="ed-error"></div>
+  <button class="btn-cancel" style="width:100%;text-align:center;" onclick="closePanels()">Fermer</button>
+</div>
+
+<script>
+// ============================================================
+// CONSTANTS
+// ============================================================
+const DAYS=['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
+const MONTHS_FR=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+const TAG_COLORS={cours:'#6bb5ff',perso:'#b86bff',sport:'#6bffb8',repas:'#ffb86b',revisions:'#ff6b6b',libre:'#555'};
+
+// ============================================================
+// DEFAULT SCHEDULE
+// ============================================================
+function mkDefault(){
+  return {
+    Lundi:[
+      {name:'Réveil & petit-dej',start:'06:00',end:'07:45',tag:'libre',open:false,subtasks:[{name:'Se lever',done:false},{name:'Douche',done:false},{name:'Petit-déjeuner',done:false},{name:'Préparer le sac',done:false}]},
+      {name:'Lycée',start:'08:00',end:'17:00',tag:'cours',open:false,subtasks:[{name:'Aller en cours',done:false}]},
+      {name:'Trajet retour',start:'17:30',end:'18:15',tag:'libre',open:false,subtasks:[]},
+      {name:'Repas du soir',start:'18:30',end:'19:00',tag:'repas',open:false,subtasks:[]},
+      {name:'Révisions & devoirs',start:'19:15',end:'20:30',tag:'revisions',open:false,subtasks:[{name:'Relire le cours du jour',done:false},{name:'Faire les exercices',done:false}]},
+      {name:'Projet perso',start:'20:30',end:'22:00',tag:'perso',open:false,subtasks:[{name:'Programmation',done:false}]},
+      {name:'Temps libre & coucher',start:'22:00',end:'23:00',tag:'libre',open:false,subtasks:[{name:'Coucher 23h',done:false}]},
+    ],
+    Mardi:[
+      {name:'Réveil & petit-dej',start:'06:00',end:'07:45',tag:'libre',open:false,subtasks:[{name:'Se lever',done:false},{name:'Douche',done:false},{name:'Petit-déjeuner',done:false},{name:'Préparer le sac',done:false}]},
+      {name:'Lycée',start:'08:00',end:'17:00',tag:'cours',open:false,subtasks:[{name:'Aller en cours',done:false}]},
+      {name:'Trajet retour',start:'17:30',end:'18:15',tag:'libre',open:false,subtasks:[]},
+      {name:'Repas du soir',start:'18:30',end:'19:00',tag:'repas',open:false,subtasks:[]},
+      {name:'Révisions & devoirs',start:'19:15',end:'20:30',tag:'revisions',open:false,subtasks:[{name:'Relire le cours du jour',done:false},{name:'Faire les exercices',done:false}]},
+      {name:'Projet perso',start:'20:30',end:'22:00',tag:'perso',open:false,subtasks:[{name:'Programmation',done:false}]},
+      {name:'Temps libre & coucher',start:'22:00',end:'23:00',tag:'libre',open:false,subtasks:[{name:'Coucher 23h',done:false}]},
+    ],
+    Mercredi:[
+      {name:'Réveil & petit-dej',start:'06:00',end:'07:45',tag:'libre',open:false,subtasks:[{name:'Se lever',done:false},{name:'Douche',done:false},{name:'Petit-déjeuner',done:false},{name:'Préparer le sac',done:false}]},
+      {name:'Lycée (matin)',start:'08:00',end:'12:00',tag:'cours',open:false,subtasks:[{name:'Aller en cours',done:false}]},
+      {name:'Repas midi',start:'12:30',end:'13:30',tag:'repas',open:false,subtasks:[]},
+      {name:'Volley — entraînement',start:'14:00',end:'16:00',tag:'sport',open:false,subtasks:[{name:'Préparer le sac sport',done:false},{name:'Entraînement',done:false}]},
+      {name:'Projet perso',start:'16:30',end:'18:30',tag:'perso',open:false,subtasks:[{name:'Programmation / modélisation',done:false}]},
+      {name:'Repas du soir',start:'19:00',end:'19:30',tag:'repas',open:false,subtasks:[]},
+      {name:'Révisions & devoirs',start:'19:45',end:'21:30',tag:'revisions',open:false,subtasks:[{name:'Relire le cours',done:false},{name:'Faire les exercices',done:false}]},
+      {name:'Temps libre & coucher',start:'21:30',end:'23:00',tag:'libre',open:false,subtasks:[{name:'Coucher 23h',done:false}]},
+    ],
+    Jeudi:[
+      {name:'Réveil & petit-dej',start:'06:00',end:'07:45',tag:'libre',open:false,subtasks:[{name:'Se lever',done:false},{name:'Douche',done:false},{name:'Petit-déjeuner',done:false},{name:'Préparer le sac',done:false}]},
+      {name:'Lycée',start:'08:00',end:'17:00',tag:'cours',open:false,subtasks:[{name:'Aller en cours',done:false}]},
+      {name:'Trajet retour',start:'17:30',end:'18:15',tag:'libre',open:false,subtasks:[]},
+      {name:'Repas du soir',start:'18:30',end:'19:00',tag:'repas',open:false,subtasks:[]},
+      {name:'Révisions & devoirs',start:'19:15',end:'20:30',tag:'revisions',open:false,subtasks:[{name:'Relire le cours du jour',done:false},{name:'Faire les exercices',done:false}]},
+      {name:'Projet perso',start:'20:30',end:'22:00',tag:'perso',open:false,subtasks:[{name:'Programmation',done:false}]},
+      {name:'Temps libre & coucher',start:'22:00',end:'23:00',tag:'libre',open:false,subtasks:[{name:'Coucher 23h',done:false}]},
+    ],
+    Vendredi:[
+      {name:'Réveil & petit-dej',start:'06:00',end:'07:45',tag:'libre',open:false,subtasks:[{name:'Se lever',done:false},{name:'Douche',done:false},{name:'Petit-déjeuner',done:false},{name:'Préparer le sac',done:false}]},
+      {name:'Lycée',start:'08:00',end:'16:30',tag:'cours',open:false,subtasks:[{name:'Aller en cours',done:false}]},
+      {name:'Trajet retour',start:'16:40',end:'17:10',tag:'libre',open:false,subtasks:[]},
+      {name:'Temps libre / décompression',start:'17:15',end:'18:30',tag:'libre',open:false,subtasks:[]},
+      {name:'Repas du soir',start:'18:30',end:'19:00',tag:'repas',open:false,subtasks:[]},
+      {name:'Projet perso',start:'19:30',end:'21:30',tag:'perso',open:false,subtasks:[{name:'Programmation',done:false}]},
+      {name:'Temps libre & coucher',start:'21:30',end:'23:00',tag:'libre',open:false,subtasks:[{name:'Coucher 23h',done:false}]},
+    ],
+    Samedi:[
+      {name:'Réveil & petit-dej',start:'08:00',end:'09:30',tag:'libre',open:false,subtasks:[{name:'Se lever',done:false},{name:'Petit-déjeuner',done:false}]},
+      {name:'Projet perso — modélisation 3D',start:'09:30',end:'12:30',tag:'perso',open:false,subtasks:[{name:'Ouvrir Fusion/Bambu',done:false},{name:'Avancer le projet',done:false}]},
+      {name:'Repas midi',start:'12:30',end:'13:30',tag:'repas',open:false,subtasks:[]},
+      {name:'Volley — match / entraînement',start:'14:00',end:'17:00',tag:'sport',open:false,subtasks:[{name:'Préparer le sac sport',done:false},{name:'Match / entraînement',done:false}]},
+      {name:'Temps libre / famille',start:'17:00',end:'19:00',tag:'libre',open:false,subtasks:[]},
+      {name:'Repas du soir',start:'19:00',end:'19:45',tag:'repas',open:false,subtasks:[]},
+      {name:'Projet perso — programmation',start:'20:00',end:'23:00',tag:'perso',open:false,subtasks:[{name:'Programmation',done:false}]},
+    ],
+    Dimanche:[
+      {name:'Réveil & petit-dej',start:'08:30',end:'10:00',tag:'libre',open:false,subtasks:[{name:'Se lever',done:false},{name:'Petit-déjeuner tranquille',done:false}]},
+      {name:'Révisions hebdo',start:'10:00',end:'12:00',tag:'revisions',open:false,subtasks:[{name:'Relire tous les cours de la semaine',done:false},{name:'Faire une fiche récap',done:false}]},
+      {name:'Repas midi',start:'12:30',end:'13:30',tag:'repas',open:false,subtasks:[]},
+      {name:'Temps libre / famille',start:'13:30',end:'16:00',tag:'libre',open:false,subtasks:[]},
+      {name:'Projet perso',start:'16:00',end:'18:30',tag:'perso',open:false,subtasks:[{name:'Avancer un projet',done:false}]},
+      {name:'Repas du soir',start:'19:00',end:'19:45',tag:'repas',open:false,subtasks:[]},
+      {name:'Prépa semaine à venir',start:'20:00',end:'21:00',tag:'revisions',open:false,subtasks:[{name:'Vérifier le cahier de texte',done:false},{name:'Préparer le sac pour lundi',done:false}]},
+      {name:'Temps libre & coucher',start:'21:00',end:'23:00',tag:'libre',open:false,subtasks:[{name:'Coucher 23h',done:false}]},
+    ],
+  };
+}
+function mkEmpty(){const s={};DAYS.forEach(d=>{s[d]=[];});return s;}
+
+// ============================================================
+// STATE
+// ============================================================
+function defaultStorage(){
+  return {profiles:[{id:'default',name:'Semaine de cours',schedule:mkDefault()}],activeId:'default'};
+}
+let storage=JSON.parse(localStorage.getItem('planning_v4')||'null')||defaultStorage();
+function save(){try{localStorage.setItem('planning_v4',JSON.stringify(storage));}catch(e){}}
+function activePf(){return storage.profiles.find(p=>p.id===storage.activeId)||storage.profiles[0];}
+function activeSched(){return activePf().schedule;}
+
+// ============================================================
+// GLOBALS
+// ============================================================
+const TODAY=new Date();
+const todayIdx=(TODAY.getDay()+6)%7;
+let currentDay=DAYS[todayIdx];
+let editMode=false;
+let currentView='list';
+let editingSlotIdx=null;
+let monthDate=new Date(TODAY.getFullYear(),TODAY.getMonth(),1);
+let selectedMonthDay=null;
+
+// ============================================================
+// TIME PICKER  (FIX: touch-action:none in CSS + editingSlotIdx set after openPanel)
+// ============================================================
+const tpSt={s:[6,0],e:[7,0],es:[8,0],ee:[9,0]};
+let tpTimer=null,tpIv=null;
+
+function tpChange(pfx,part,dir){
+  if(part===0) tpSt[pfx][0]=(tpSt[pfx][0]+dir+24)%24;
+  else         tpSt[pfx][1]=(tpSt[pfx][1]+dir+60)%60;
+  tpRend(pfx);
+}
+function tpSR(pfx,part,dir){
+  tpChange(pfx,part,dir);
+  tpTimer=setTimeout(()=>{tpIv=setInterval(()=>tpChange(pfx,part,dir),80);},400);
+}
+function tpST(){clearTimeout(tpTimer);clearInterval(tpIv);tpTimer=null;tpIv=null;}
+function tpRend(pfx){
+  const[h,m]=tpSt[pfx];
+  const hEl=document.getElementById(pfx+'-h'),mEl=document.getElementById(pfx+'-m');
+  if(hEl)hEl.textContent=String(h).padStart(2,'0');
+  if(mEl)mEl.textContent=String(m).padStart(2,'0');
+}
+function tpGet(pfx){const[h,m]=tpSt[pfx];return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');}
+function tpSet(pfx,t){
+  if(!t){tpRend(pfx);return;}
+  const[h,m]=t.split(':').map(Number);
+  tpSt[pfx]=[h||0,m||0];tpRend(pfx);
+}
+
+// ============================================================
+// PANELS  (FIX: editingSlotIdx reset only on real close)
+// ============================================================
+function openPanel(id){
+  // Close others without resetting editingSlotIdx
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('open'));
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById(id).classList.add('open');
+  if(currentView==='list') document.getElementById('fab').classList.add('hidden');
+}
+function closePanels(){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('open'));
+  document.getElementById('overlay').classList.remove('open');
+  if(currentView==='list') document.getElementById('fab').classList.remove('hidden');
+  ['s-name','es-name','new-profile-name','ed-user','ed-pass'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value='';
+  });
+  editingSlotIdx=null;
+}
+
+// ============================================================
+// PROFILE BAR
+// ============================================================
+function renderProfileBar(){
+  const bar=document.getElementById('profile-bar');
+  bar.innerHTML=storage.profiles.map(p=>`
+    <button class="profile-chip${p.id===storage.activeId?' active':''}" onclick="switchProfile('${p.id}')">${p.name}</button>
+  `).join('')+`<button class="profile-gear" onclick="openProfilesPanel()" title="Gérer les profils">⚙</button>`;
+  document.getElementById('header-profile').textContent='Profil : '+activePf().name;
+}
+function switchProfile(id){storage.activeId=id;save();renderProfileBar();render();}
+function openProfilesPanel(){
+  renderProfileList();
+  const sel=document.getElementById('new-profile-copy');
+  sel.innerHTML='<option value="">— vide —</option>'+
+    storage.profiles.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+  openPanel('panel-profiles');
+}
+function renderProfileList(){
+  document.getElementById('profile-list').innerHTML=storage.profiles.map(p=>`
+    <div class="pf-item${p.id===storage.activeId?' active-pf':''}">
+      <div class="pf-name">${p.name}</div>
+      ${p.id===storage.activeId?'<span class="pf-badge">actif</span>':''}
+      ${storage.profiles.length>1&&p.id!==storage.activeId
+        ?`<button class="pf-del" onclick="deletePf('${p.id}')">✕</button>`:''}
+    </div>`).join('');
+}
+function createProfile(){
+  const name=document.getElementById('new-profile-name').value.trim();
+  if(!name)return;
+  const copyFromId=document.getElementById('new-profile-copy').value;
+  const src=copyFromId?storage.profiles.find(p=>p.id===copyFromId):null;
+  const schedule=src?JSON.parse(JSON.stringify(src.schedule)):mkEmpty();
+  const id='p_'+Date.now();
+  storage.profiles.push({id,name,schedule});
+  storage.activeId=id;
+  save();closePanels();renderProfileBar();render();
+}
+function deletePf(id){
+  if(storage.profiles.length<=1)return;
+  storage.profiles=storage.profiles.filter(p=>p.id!==id);
+  if(storage.activeId===id)storage.activeId=storage.profiles[0].id;
+  save();renderProfileList();renderProfileBar();render();
+}
+
+// ============================================================
+// HEADER & TABS
+// ============================================================
+function renderHeader(){
+  document.getElementById('header-date').textContent=
+    TODAY.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+  document.getElementById('header-profile').textContent='Profil : '+activePf().name;
+}
+function renderDayTabs(show){
+  document.getElementById('day-tabs').style.display=show?'flex':'none';
+  document.getElementById('progress-wrap').style.display=(show&&currentView==='list')?'block':'none';
+  if(!show)return;
+  document.getElementById('day-tabs').innerHTML=DAYS.map((d,i)=>{
+    const isToday=i===todayIdx,isActive=d===currentDay;
+    return`<button class="day-tab${isActive?' active':''}${isToday&&!isActive?' today-dot':''}" onclick="switchDay('${d}')">${d.slice(0,3)}</button>`;
+  }).join('');
+}
+function renderProgress(){
+  const slots=activeSched()[currentDay]||[];
+  let total=0,done=0;
+  slots.forEach(s=>{s.subtasks.forEach(t=>{total++;if(t.done)done++;});});
+  const pct=total?Math.round(done/total*100):0;
+  document.getElementById('prog-label').textContent=`${done} / ${total} tâche${total>1?'s':''}`;
+  document.getElementById('prog-pct').textContent=pct+'%';
+  document.getElementById('prog-fill').style.width=pct+'%';
+}
+
+// ============================================================
+// LIST VIEW
+// ============================================================
+function renderList(){
+  const container=document.getElementById('slots-list');
+  const slots=activeSched()[currentDay]||[];
+  if(!slots.length){container.innerHTML='<div class="empty">Aucun bloc — appuie sur + pour en ajouter</div>';return;}
+  container.innerHTML=slots.map((slot,si)=>{
+    const sd=slot.subtasks.filter(t=>t.done).length,st=slot.subtasks.length;
+    const subsHTML=slot.subtasks.map((t,ti)=>`
+      <div class="sub-row${t.done?' done':''}" onclick="toggleSub(${si},${ti})">
+        <div class="sub-check"><svg class="sub-cm" width="10" height="7" viewBox="0 0 10 7" fill="none"><path d="M1 3.5l2.5 2.5 5.5-5" stroke="#0f0f0f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <span class="sub-name">${t.name}</span>
+        <button class="sub-del" onclick="delSub(event,${si},${ti})">✕</button>
+      </div>`).join('');
+    return`<div class="slot-card${slot.open?' open':''}${editMode?' edit-mode-on':''}" id="slot-${si}">
+      <div class="slot-header" onclick="toggleSlot(${si})">
+        <div class="slot-color-bar bar-${slot.tag}"></div>
+        <div class="slot-header-info">
+          <div class="slot-name">${slot.name}</div>
+          <div class="slot-time">${slot.start}${slot.end?' → '+slot.end:''}</div>
+        </div>
+        ${st?`<span class="slot-prog">${sd}/${st}</span>`:''}
+        <div class="slot-actions" onclick="event.stopPropagation()">
+          <button class="sbtn sbtn-edit" onclick="openEditSlot(${si})">✏️</button>
+          <button class="sbtn sbtn-del" onclick="deleteSlotDirect(${si})">✕</button>
+        </div>
+        <span class="slot-chevron">›</span>
+      </div>
+      <div class="subtasks">
+        ${subsHTML}
+        <div class="add-sub-row">
+          <input class="add-sub-input" id="sub-input-${si}" placeholder="Ajouter une tâche…" onkeydown="if(event.key==='Enter')addSub(${si})"/>
+          <button class="add-sub-btn" onclick="addSub(${si})">+</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleSlot(si){const s=activeSched()[currentDay];if(s[si])s[si].open=!s[si].open;save();renderList();}
+function toggleSub(si,ti){activeSched()[currentDay][si].subtasks[ti].done=!activeSched()[currentDay][si].subtasks[ti].done;save();renderProgress();renderList();}
+function delSub(e,si,ti){e.stopPropagation();activeSched()[currentDay][si].subtasks.splice(ti,1);save();renderProgress();renderList();}
+function addSub(si){
+  const input=document.getElementById('sub-input-'+si);
+  const name=input.value.trim();if(!name)return;
+  activeSched()[currentDay][si].subtasks.push({name,done:false});
+  activeSched()[currentDay][si].open=true;
+  save();renderProgress();renderList();
+  setTimeout(()=>{const el=document.getElementById('sub-input-'+si);if(el)el.focus();},80);
+}
+
+// ============================================================
+// DAY TIMETABLE
+// ============================================================
+function renderDayTT(){
+  const HOUR_H=52,S=6,E=24;
+  const slots=activeSched()[currentDay]||[];
+  let html='';
+  for(let h=S;h<E;h++){
+    html+=`<div class="day-tt-row" style="height:${HOUR_H}px;">
+      <div class="day-tt-time">${String(h).padStart(2,'0')}h</div>
+      <div class="day-tt-line"></div>
+    </div>`;
+  }
+  slots.forEach(slot=>{
+    const startM=toMins(slot.start),endM=toMins(slot.end)||startM+60;
+    if(startM===null||startM<S*60||startM>=E*60)return;
+    const top=40+((startM-S*60)/60)*HOUR_H;
+    const height=Math.max(30,((endM-startM)/60)*HOUR_H-3);
+    const sd=slot.subtasks.filter(t=>t.done).length,st=slot.subtasks.length;
+    const prog=st?` · ${sd}/${st}`:'';
+    html+=`<div class="day-block tag-${slot.tag}" style="position:absolute;top:${top}px;height:${height}px;left:50px;right:1.25rem;">
+      <div class="dbn">${slot.name}</div>
+      <div class="dbm">${slot.start}${slot.end?' → '+slot.end:''}${prog}</div>
+    </div>`;
+  });
+  const nowM=new Date().getHours()*60+new Date().getMinutes();
+  if(nowM>=S*60&&nowM<E*60&&currentDay===DAYS[todayIdx]){
+    const top=40+((nowM-S*60)/60)*HOUR_H;
+    html+=`<div class="day-now" style="top:${top}px;"></div>`;
+  }
+  document.getElementById('day-tt').innerHTML=html;
+  if(currentDay===DAYS[todayIdx])
+    document.getElementById('view-day').scrollTop=Math.max(0,((new Date().getHours()-S)*HOUR_H)-80);
+}
+
+// ============================================================
+// WEEK TIMETABLE
+// ============================================================
+function renderWeekTT(){
+  const HOUR_H=36,S=6,E=24;
+  const sched=activeSched();
+  let html=`<div class="week-hr"><div class="week-tc"></div>`;
+  DAYS.forEach((d,i)=>{html+=`<div class="week-dh${i===todayIdx?' today':''}">${d.slice(0,3)}</div>`;});
+  html+=`</div><div class="week-body" style="position:relative;">`;
+  for(let h=S;h<E;h++){
+    html+=`<div class="week-row" style="height:${HOUR_H}px;">
+      <div class="week-tl">${String(h).padStart(2,'0')}h</div>
+      ${DAYS.map(()=>'<div class="week-cell"></div>').join('')}
+    </div>`;
+  }
+  DAYS.forEach((d,di)=>{
+    (sched[d]||[]).forEach(slot=>{
+      const startM=toMins(slot.start),endM=toMins(slot.end)||startM+60;
+      if(startM===null||startM<S*60||startM>=E*60)return;
+      const top=((startM-S*60)/60)*HOUR_H;
+      const height=Math.max(14,((endM-startM)/60)*HOUR_H-2);
+      const left=(di/7)*100,width=(1/7)*100;
+      const short=slot.name.length>11?slot.name.slice(0,10)+'…':slot.name;
+      html+=`<div class="week-blk tag-${slot.tag}" style="top:${top}px;height:${height}px;left:calc(38px + ${left}%);width:calc(${width}% - 2px);position:absolute;" title="${slot.name}">
+        <span style="font-size:8px;opacity:.7;">${slot.start}</span> ${short}
+      </div>`;
+    });
+  });
+  const nowM=new Date().getHours()*60+new Date().getMinutes();
+  if(nowM>=S*60&&nowM<E*60){
+    const top=((nowM-S*60)/60)*HOUR_H;
+    html+=`<div class="week-now" style="top:${top}px;"></div>`;
+  }
+  html+='</div>';
+  document.getElementById('week-tt').innerHTML=html;
+  document.getElementById('view-week').scrollTop=Math.max(0,(new Date().getHours()-S)*HOUR_H-60);
+}
+
+// ============================================================
+// MONTH VIEW
+// ============================================================
+function renderMonth(){
+  const year=monthDate.getFullYear(),month=monthDate.getMonth();
+  document.getElementById('month-title').textContent=MONTHS_FR[month]+' '+year;
+  const first=new Date(year,month,1),startWD=(first.getDay()+6)%7;
+  const dim=new Date(year,month+1,0).getDate();
+  const prevDays=new Date(year,month,0).getDate();
+  const sched=activeSched();
+  let cells=[];
+  for(let i=startWD-1;i>=0;i--)cells.push({day:prevDays-i,cur:false});
+  for(let d=1;d<=dim;d++)cells.push({day:d,cur:true});
+  while(cells.length%7!==0)cells.push({day:cells.length-dim-startWD+1,cur:false});
+  let html='';
+  cells.forEach(cell=>{
+    const isToday=cell.cur&&cell.day===TODAY.getDate()&&month===TODAY.getMonth()&&year===TODAY.getFullYear();
+    const isSel=selectedMonthDay&&cell.cur&&cell.day===selectedMonthDay;
+    const wd=cell.cur?(new Date(year,month,cell.day).getDay()+6)%7:0;
+    const daySlots=cell.cur?(sched[DAYS[wd]]||[]):[];
+    const dots=daySlots.slice(0,6).map(s=>`<div class="md-dot tag-${s.tag}"></div>`).join('');
+    html+=`<div class="month-day${!cell.cur?' other-month':''}${isToday?' today':''}${isSel?' selected':''}" onclick="${cell.cur?`selMonthDay(${cell.day})`:''}">
+      <div class="md-num">${cell.day}</div><div class="md-dots">${dots}</div>
+    </div>`;
+  });
+  document.getElementById('month-grid').innerHTML=html;
+  renderMonthDetail();
+}
+function selMonthDay(d){selectedMonthDay=d;renderMonth();}
+function renderMonthDetail(){
+  const det=document.getElementById('month-detail');
+  if(!selectedMonthDay){det.innerHTML='<div class="empty" style="padding:1rem 0;font-size:13px;">Tape sur un jour pour voir les blocs</div>';return;}
+  const wd=(new Date(monthDate.getFullYear(),monthDate.getMonth(),selectedMonthDay).getDay()+6)%7;
+  const slots=(activeSched()[DAYS[wd]]||[]);
+  det.innerHTML=`<div class="month-detail-title">${DAYS[wd]} ${selectedMonthDay} ${MONTHS_FR[monthDate.getMonth()]}</div>`+
+    (slots.length?slots.map(s=>`<div class="mds">
+      <div class="mds-dot" style="background:${TAG_COLORS[s.tag]};"></div>
+      <div class="mds-name">${s.name}</div>
+      <div class="mds-time">${s.start}${s.end?' → '+s.end:''}</div>
+    </div>`).join(''):'<div style="color:var(--muted);font-size:13px;padding:.5rem 0;">Aucun bloc ce jour</div>');
+}
+function monthOffset(dir){monthDate=new Date(monthDate.getFullYear(),monthDate.getMonth()+dir,1);selectedMonthDay=null;renderMonth();}
+
+// ============================================================
+// SLOT CRUD  (FIX: editingSlotIdx set AFTER openPanel)
+// ============================================================
+function openAddSlot(){
+  tpSet('s','06:00');tpSet('e','07:00');
+  document.getElementById('panel-slot-day').textContent=currentDay+' · '+activePf().name;
+  openPanel('panel-slot');
+  setTimeout(()=>document.getElementById('s-name').focus(),100);
+}
+function saveSlot(){
+  const name=document.getElementById('s-name').value.trim();
+  if(!name)return;
+  const start=tpGet('s'),end=tpGet('e'),tag=document.getElementById('s-tag').value;
+  const sched=activeSched();
+  if(!sched[currentDay])sched[currentDay]=[];
+  sched[currentDay].push({name,start,end,tag,open:false,subtasks:[]});
+  sched[currentDay].sort((a,b)=>a.start.localeCompare(b.start));
+  save();closePanels();render();
+}
+function openEditSlot(si){
+  // Set values first
+  const s=activeSched()[currentDay][si];
+  document.getElementById('es-name').value=s.name;
+  document.getElementById('es-tag').value=s.tag;
+  tpSet('es',s.start||'08:00');
+  tpSet('ee',s.end||'09:00');
+  // Open panel (does NOT reset editingSlotIdx since closePanels not called)
+  openPanel('panel-edit-slot');
+  // Set AFTER openPanel to avoid any reset
+  editingSlotIdx=si;
+}
+function saveEditSlot(){
+  if(editingSlotIdx===null)return;
+  const s=activeSched()[currentDay][editingSlotIdx];
+  s.name=document.getElementById('es-name').value.trim()||s.name;
+  s.start=tpGet('es');
+  s.end=tpGet('ee');
+  s.tag=document.getElementById('es-tag').value;
+  activeSched()[currentDay].sort((a,b)=>a.start.localeCompare(b.start));
+  save();closePanels();render();
+}
+function deleteSlotDirect(si){activeSched()[currentDay].splice(si,1);save();renderProgress();renderList();}
+function deleteSlotEdit(){if(editingSlotIdx===null)return;activeSched()[currentDay].splice(editingSlotIdx,1);save();closePanels();render();}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function switchDay(d){
+  currentDay=d;editMode=false;
+  document.getElementById('edit-btn').classList.remove('active');
+  document.getElementById('edit-btn').textContent='modifier';
+  if(currentView==='list'){renderDayTabs(true);renderProgress();renderList();}
+  else if(currentView==='day'){renderDayTabs(true);renderDayTT();}
+}
+function toggleEditMode(){
+  editMode=!editMode;
+  const btn=document.getElementById('edit-btn');
+  btn.classList.toggle('active',editMode);
+  btn.textContent=editMode?'terminer':'modifier';
+  renderList();
+}
+function switchView(v){
+  currentView=v;
+  ['list','day','week','month'].forEach(id=>{
+    document.getElementById('view-'+id).style.display=v===id?'block':'none';
+    document.getElementById('vtab-'+id).classList.toggle('active',v===id);
+  });
+  renderDayTabs(v==='list'||v==='day');
+  document.getElementById('fab').classList.toggle('hidden',v!=='list');
+  if(v==='list'){renderProgress();renderList();}
+  else if(v==='day')renderDayTT();
+  else if(v==='week')renderWeekTT();
+  else if(v==='month'){selectedMonthDay=null;renderMonth();}
+}
+
+// ============================================================
+// ECOLEDIRECTE
+// ============================================================
+let edSession=null;
+try{edSession=JSON.parse(sessionStorage.getItem('ed_session')||'null');}catch(e){}
+let edWeek=getMonday(new Date());
+
+function getMonday(d){
+  const date=new Date(d);const day=date.getDay();
+  const diff=date.getDate()-day+(day===0?-6:1);
+  return new Date(date.setDate(diff));
+}
+function fmtDate(d){return d.toISOString().split('T')[0];}
+function fmtShort(d){return d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'});}
+
+function openEdPanel(){
+  document.getElementById('ed-error').textContent='';
+  const connected=!!edSession;
+  document.getElementById('ed-status').textContent=connected?'✓ Connecté : '+edSession.name:'Non connecté';
+  document.getElementById('ed-status').className='ed-status'+(connected?' connected':'');
+  document.getElementById('ed-login-section').style.display=connected?'none':'flex';
+  document.getElementById('ed-login-section').style.flexDirection='column';
+  document.getElementById('ed-login-section').style.gap='10px';
+  document.getElementById('ed-connected-section').style.display=connected?'flex':'none';
+  if(connected)renderEdWeekLabel();
+  openPanel('panel-ed');
+}
+function renderEdWeekLabel(){
+  const end=new Date(edWeek);end.setDate(end.getDate()+4);
+  document.getElementById('ed-week-label').textContent=fmtShort(edWeek)+' — '+fmtShort(end);
+}
+function edWeekNav(dir){
+  edWeek=new Date(edWeek);edWeek.setDate(edWeek.getDate()+dir*7);
+  renderEdWeekLabel();
+}
+function edDisconnect(){
+  edSession=null;
+  try{sessionStorage.removeItem('ed_session');}catch(e){}
+  openEdPanel();
+}
+
+async function doEdLogin(){
+  const user=document.getElementById('ed-user').value.trim();
+  const pass=document.getElementById('ed-pass').value;
+  if(!user||!pass)return;
+  const btn=document.getElementById('ed-login-btn');
+  const errEl=document.getElementById('ed-error');
+  btn.textContent='Connexion…';btn.disabled=true;errEl.textContent='';
+  try{
+    const edBody='data='+encodeURIComponent(JSON.stringify({identifiant:user,motdepasse:pass,isRelogin:false}));
+    const res=await fetch('/.netlify/functions/ed-proxy',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({path:'/login.awp',body:edBody})
+    });
+    const data=await res.json();
+    if(data.code!==200)throw new Error(data.message||'Identifiants incorrects');
+    const acc=data.data.accounts.find(a=>a.typeCompte==='E')||data.data.accounts[0];
+    if(!acc)throw new Error('Aucun compte élève trouvé');
+    edSession={token:data.token,eleveId:acc.id,name:(acc.prenom||'')+' '+(acc.nom||'')};
+    document.getElementById('ed-pass').value='';
+    try{sessionStorage.setItem('ed_session',JSON.stringify(edSession));}catch(e){}
+    openEdPanel();
+  }catch(err){
+    if(err.name==='TypeError')
+      errEl.textContent='✗ Connexion bloquée. Vérifie ta connexion ou réessaie plus tard.';
+    else
+      errEl.textContent='✗ '+(err.message||'Erreur inconnue');
+  }finally{btn.textContent='Se connecter';btn.disabled=false;}
+}
+
+async function doEdImport(createNew){
+  if(!edSession)return;
+  const btn=document.getElementById(createNew?'ed-btn-new':'ed-btn-update');
+  const errEl=document.getElementById('ed-error');
+  const origText=btn.textContent;
+  btn.textContent='Chargement…';btn.disabled=true;errEl.textContent='';
+  try{
+    const endDate=new Date(edWeek);endDate.setDate(endDate.getDate()+6);
+    const edBody='data='+encodeURIComponent(JSON.stringify({dateDebut:fmtDate(edWeek),dateFin:fmtDate(endDate)}));
+    const res=await fetch('/.netlify/functions/ed-proxy',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({path:'/E/'+edSession.eleveId+'/emploidutemps.awp?verbe=get',body:edBody,token:edSession.token})
+    });
+    const data=await res.json();
+    if(data.code!==200)throw new Error(data.message||'Erreur serveur');
+    if(data.token)edSession.token=data.token;
+
+    // Parse timetable → group by weekday
+    const byDay={};DAYS.forEach((_,i)=>{byDay[i]=[];});
+    (data.data||[]).forEach(c=>{
+      if(c.isAnnule)return;
+      const raw=c.start_date||c.date||'';
+      const parts=raw.split(' ');
+      const datePart=parts[0],timePart=parts[1]||'';
+      const endRaw=c.end_date||'';
+      const endTime=(endRaw.split(' ')[1]||'').substring(0,5)||'09:00';
+      if(!datePart)return;
+      const dt=new Date(datePart);
+      const di=(dt.getDay()+6)%7;
+      byDay[di].push({
+        name:(c.matiere||'Cours')+(c.salle?' ('+c.salle+')':''),
+        start:timePart.substring(0,5)||'08:00',
+        end:endTime,
+        tag:'cours',open:false,subtasks:[]
+      });
+    });
+
+    // Merge: keep non-cours blocks, replace cours blocks
+    const buildSchedule=(baseSched)=>{
+      const s=JSON.parse(JSON.stringify(baseSched));
+      DAYS.forEach((d,i)=>{
+        s[d]=[...(s[d]||[]).filter(b=>b.tag!=='cours'),...byDay[i]];
+        s[d].sort((a,b)=>a.start.localeCompare(b.start));
+      });
+      return s;
+    };
+
+    if(createNew){
+      const newSched=buildSchedule(activeSched());
+      const weekLabel=fmtShort(edWeek);
+      const id='ed_'+Date.now();
+      storage.profiles.push({id,name:'EDT '+weekLabel,schedule:newSched});
+      storage.activeId=id;
+    }else{
+      DAYS.forEach((d,i)=>{
+        activeSched()[d]=[...(activeSched()[d]||[]).filter(b=>b.tag!=='cours'),...byDay[i]];
+        activeSched()[d].sort((a,b)=>a.start.localeCompare(b.start));
+      });
+    }
+    save();closePanels();renderProfileBar();render();
+  }catch(err){
+    if(err.name==='TypeError')
+      errEl.textContent='✗ Erreur réseau. L\'API EcoleDirecte est peut-être inaccessible.';
+    else if((err.message||'').toLowerCase().includes('token'))
+      {errEl.textContent='✗ Session expirée. Reconnecte-toi.';edSession=null;openEdPanel();}
+    else
+      errEl.textContent='✗ '+(err.message||'Erreur inconnue');
+  }finally{btn.textContent=origText;btn.disabled=false;}
+}
+
+// ============================================================
+// IMPORT / EXPORT
+// ============================================================
+function doExport(){
+  const blob=new Blob([JSON.stringify(storage,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;
+  a.download='planning-'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();URL.revokeObjectURL(url);
+  const el=document.getElementById('ie-status');el.className='ie-st ok';el.textContent='✓ Téléchargé !';
+}
+function doImport(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const parsed=JSON.parse(ev.target.result);
+      if(!parsed.profiles||!Array.isArray(parsed.profiles))throw new Error();
+      storage=parsed;save();closePanels();renderProfileBar();render();
+      const el=document.getElementById('ie-status');el.className='ie-st ok';el.textContent='✓ Importé avec succès !';
+    }catch(err){
+      const el=document.getElementById('ie-status');el.className='ie-st err';el.textContent='✗ Fichier invalide.';
+    }
+  };
+  reader.readAsText(file);e.target.value='';
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function toMins(t){if(!t)return null;const[h,m]=t.split(':').map(Number);return h*60+(m||0);}
+
+// ============================================================
+// MAIN RENDER
+// ============================================================
+function render(){
+  renderHeader();renderProfileBar();
+  if(currentView==='list'){renderDayTabs(true);renderProgress();renderList();}
+  else if(currentView==='day'){renderDayTabs(true);renderDayTT();}
+  else if(currentView==='week'){renderDayTabs(false);renderWeekTT();}
+  else if(currentView==='month'){renderDayTabs(false);renderMonth();}
+}
+
+document.getElementById('s-name').addEventListener('keydown',e=>{if(e.key==='Enter')saveSlot();});
+document.getElementById('es-name').addEventListener('keydown',e=>{if(e.key==='Enter')saveEditSlot();});
+document.getElementById('new-profile-name').addEventListener('keydown',e=>{if(e.key==='Enter')createProfile();});
+
+render();
+</script>
+</body>
+</html>
