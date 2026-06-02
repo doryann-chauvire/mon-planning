@@ -1,52 +1,54 @@
 exports.handler = async function(event) {
-  const corsHeaders = {
+  const cors = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS'
   };
-
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers: corsHeaders, body: '' };
-  }
-
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, headers: corsHeaders, body: 'Method Not Allowed' };
-  }
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers: cors, body: '' };
+  if (event.httpMethod !== 'POST') return { statusCode: 405, headers: cors, body: 'Method Not Allowed' };
 
   try {
-    const { path, body, token } = JSON.parse(event.body);
-
-    if (!path || !body) {
-      return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ error: 'Missing path or body' }) };
-    }
+    const { path, identifiant, motdepasse, body, token } = JSON.parse(event.body);
 
     const allowed = ['/login.awp', '/emploidutemps.awp'];
-    const isAllowed = allowed.some(p => path.includes(p));
-    if (!isAllowed) {
-      return { statusCode: 403, headers: corsHeaders, body: JSON.stringify({ error: 'Path non autorisé' }) };
+    if (!path || !allowed.some(p => path.includes(p))) {
+      return { statusCode: 403, headers: cors, body: JSON.stringify({ error: 'Path non autorisé' }) };
     }
 
-    const reqHeaders = { 'Content-Type': 'application/x-www-form-urlencoded' };
+    const reqHeaders = {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'User-Agent': 'ecoledirecte/4.40.1 (iPhone; iOS 16.7; Scale/3.00)',
+      'X-Requested-With': 'XMLHttpRequest'
+    };
     if (token) reqHeaders['X-Token'] = token;
+
+    let reqBody = body;
+    if (path.includes('/login.awp') && identifiant) {
+      reqBody = 'data=' + encodeURIComponent(JSON.stringify({
+        identifiant,
+        motdepasse,
+        isRelogin: false,
+        uuid: '',
+        fa: []
+      }));
+    }
 
     const response = await fetch('https://api.ecoledirecte.com/v3' + path, {
       method: 'POST',
       headers: reqHeaders,
-      body
+      body: reqBody
     });
 
     const data = await response.json();
-
     return {
       statusCode: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...cors, 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     };
-
   } catch (err) {
     return {
       statusCode: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...cors, 'Content-Type': 'application/json' },
       body: JSON.stringify({ error: err.message || 'Erreur serveur' })
     };
   }
